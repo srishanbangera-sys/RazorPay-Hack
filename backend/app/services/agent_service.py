@@ -1,0 +1,297 @@
+import uuid
+import json
+import re
+from typing import List, Dict, Any, Optional
+from sqlalchemy.orm import Session
+
+from app.core.config import settings
+from app.models.product import Product
+from app.models.mandate import Mandate
+from app.schemas.product import ProductResponse
+from app.schemas.checkout import (
+    CheckoutItemInput,
+    CheckoutProposeRequest,
+    CheckoutConfirmRequest,
+    CartItemDetail
+)
+from app.schemas.agent import (
+    AgentChatRequest,
+    AgentChatResponse,
+    ToolCallRecord
+)
+from app.services.catalog_service import CatalogService
+from app.services.mandate_service import MandateService
+from app.services.checkout_service import CheckoutService
+from app.services.explain_service import ExplainService
+from app.services.audit_service import AuditService
+
+class AgentService:
+    @staticmethod
+    def _execute_search_catalog(
+        db: Session,
+        trace_id: str,
+        q: Optional[str] = None,
+        category: Optional[str] = None,
+        max_price: Optional[int] = None
+    ) -> List[Product]:
+        AuditService.log_event(
+            db=db,
+            trace_id=trace_id,
+            actor="agent",
+            event_type="CATALOG_SEARCH",
+            action="Execute Catalog Search",
+            decision="info",
+            input_data={"q": q, "category": category, "max_price": max_price}
+        )
+        products = CatalogService.get_products(
+            db=db,
+            q=q,
+            category=category,
+            max_price=max_price,
+            in_stock=True
+        )
+        AuditService.log_event(
+            db=db,
+            trace_id=trace_id,
+            actor="backend",
+            event_type="PRODUCTS_RETURNED",
+            action="Return Catalog Search Results",
+            decision="info",
+            output_data={"count": len(products), "product_ids": [p.id for p in products]}
+        )
+        return products
+
+    @staticmethod
+    def _execute_find_alternatives(
+        db: Session,
+        trace_id: str,
+        mandate_id: str,
+        category: Optional[str] = "footwear"
+    ) -> Optional[Product]:
+        mandate = MandateService.get_mandate_by_id(db, mandate_id)
+        max_price = mandate.max_amount if mandate else 1500
+        allowed_cats = mandate.allowed_categories if mandate else ["footwear"]
+        
+        target_cat = category if category in allowed_cats else (allowed_cats[0] if allowed_cats else "footwear")
+        
+        alternatives = CatalogService.get_products(
+            db=db,
+            category=target_cat,
+            max_price=max_price,
+            in_stock=True
+        )
+        
+        if alternatives:
+            alt = alternatives[0]
+            AuditService.log_event(
+                db=db,
+                trace_id=trace_id,
+                actor="agent",
+                event_type="ALTERNATIVE_PROPOSED",
+                action="Suggest Budget-Compliant Alternative",
+                decision="info",
+                output_data={"alternative_product_id": alt.id, "name": alt.name, "price": alt.price}
+            )
+            return alt
+        return None
+
+    @staticmethod
+    def process_chat(db: Session, request: AgentChatRequest) -> AgentChatResponse:
+        trace_id = request.trace_id or f"trace_{uuid.uuid4().hex[:10]}"
+        conv_id = request.conversation_id or f"conv_{uuid.uuid4().hex[:8]}"
+
+        # Audit: Log initial user request
+        AuditService.log_event(
+            db=db,
+            trace_id=trace_id,
+            actor="buyer",
+            event_type="USER_REQUEST",
+            action="Receive Shopping Prompt",
+            decision="info",
+            input_data={"message": request.message, "mandate_id": request.mandate_id, "conversation_id": conv_id}
+        )
+
+        mandate = MandateService.get_mandate_by_id(db, request.mandate_id)
+        if not mandate:
+            mandate = MandateService.get_default_active_mandate(db)
+
+        mandate_id = mandate.id if mandate else request.mandate_id
+        user_msg = request.message.lower()
+
+        tools_invoked: List[ToolCallRecord] = []
+        products_considered: List[ProductResponse] = []
+        proposed_cart: List[CartItemDetail] = []
+        mandate_decision_dict: Optional[Dict[str, Any]] = None
+        order_id: Optional[str] = None
+        alt_product_resp: Optional[ProductResponse] = None
+        assistant_message = ""
+        cart_total: Optional[int] = None
+
+        # Determine target intent
+        is_premium_scenario = any(w in user_msg for w in ["premium", "1799", "expensive", "premium runner"])
+        is_shoes_query = any(w in user_msg for w in ["shoe", "shoes", "runner", "running", "footwear", "1500", "sprint"])
+        is_electronics_query = any(w in user_msg for w in ["earbud", "audio", "headphone", "electronic", "tracker", "smart"])
+        is_out_of_stock_query = any(w in user_msg for w in ["phantom", "sold out", "out of stock"])
+
+        # Tool 1: search_catalog
+        search_query = "running" if is_shoes_query or is_premium_scenario else None
+        if is_electronics_query:
+            search_query = "earbuds"
+        elif is_out_of_stock_query:
+            search_query = "phantom"
+            
+        found_products = CatalogService.get_products(db=db, q=search_query) if search_query else CatalogService.get_products(db=db)
+        
+        # Log catalog search tool
+        tools_invoked.append(ToolCallRecord(
+            tool="search_catalog",
+            input={"query": search_query, "category": None},
+            output={"count": len(found_products), "product_ids": [p.id for p in found_products]}
+        ))
+        AgentService._execute_search_catalog(db, trace_id, q=search_query)
+
+        products_considered = [ProductResponse.model_validate(p) for p in found_products[:4]]
+
+        selected_product = None
+        if is_premium_scenario:
+            # Find Premium Runner
+            selected_product = next((p for p in found_products if "premium" in p.name.lower()), found_products[1] if len(found_products) > 1 else found_products[0])
+        elif is_out_of_stock_query:
+            selected_product = next((p for p in found_products if "phantom" in p.name.lower()), None)
+            if not selected_product:
+                # Direct lookup
+                selected_product = db.query(Product).filter(Product.name.ilike("%phantom%")).first()
+        elif is_electronics_query:
+            selected_product = next((p for p in found_products if p.category == "electronics"), None)
+        else:
+            # Standard Scenario 1: Select Sprint Runner or first affordable product
+            selected_product = next((p for p in found_products if "sprint" in p.name.lower() or p.price <= 1500), found_products[0] if found_products else None)
+
+        if not selected_product:
+            return AgentChatResponse(
+                message="I couldn't find any products matching your request in the merchant catalog.",
+                conversation_id=conv_id,
+                trace_id=trace_id,
+                tools_invoked=tools_invoked,
+                products_considered=products_considered
+            )
+
+        # Tool 2: propose_cart
+        propose_req = CheckoutProposeRequest(
+            mandate_id=mandate_id,
+            items=[CheckoutItemInput(product_id=selected_product.id, quantity=1)],
+            trace_id=trace_id
+        )
+        propose_res = CheckoutService.propose_checkout(db, propose_req)
+        
+        tools_invoked.append(ToolCallRecord(
+            tool="propose_cart",
+            input={"mandate_id": mandate_id, "items": [{"product_id": selected_product.id, "quantity": 1}]},
+            output={
+                "allowed": propose_res.allowed,
+                "cart_total": propose_res.cart_total,
+                "decision_code": propose_res.decision_code
+            }
+        ))
+
+        proposed_cart = propose_res.items
+        cart_total = propose_res.cart_total
+        mandate_decision_dict = {
+            "allowed": propose_res.allowed,
+            "decision_code": propose_res.decision_code,
+            "message": propose_res.message,
+            "cart_total": propose_res.cart_total,
+            "details": propose_res.details
+        }
+
+        # Tool 3: checkout
+        if propose_res.allowed:
+            # Propose passed, confirm checkout
+            confirm_req = CheckoutConfirmRequest(
+                mandate_id=mandate_id,
+                items=[CheckoutItemInput(product_id=selected_product.id, quantity=1)],
+                trace_id=trace_id
+            )
+            confirm_res = CheckoutService.confirm_checkout(db, confirm_req)
+            order_id = confirm_res.order_id
+
+            tools_invoked.append(ToolCallRecord(
+                tool="checkout",
+                input={"mandate_id": mandate_id, "items": [{"product_id": selected_product.id, "quantity": 1}]},
+                output={
+                    "success": confirm_res.success,
+                    "order_id": confirm_res.order_id,
+                    "decision_code": confirm_res.decision_code
+                }
+            ))
+
+            assistant_message = (
+                f"✅ **Purchase Approved!** I selected the **{selected_product.name}** for **₹{selected_product.price:,}**.\n\n"
+                f"The backend Mandate Engine validated that the cart total (₹{selected_product.price:,}) satisfies your mandate spending limit (₹{mandate.max_amount:,}) "
+                f"and allowed category (`{selected_product.category}`). Order `{confirm_res.order_id}` has been created and sent to Razorpay Test Mode."
+            )
+        else:
+            # Propose failed: Mandate Exceeded or other violation
+            tools_invoked.append(ToolCallRecord(
+                tool="checkout",
+                input={"mandate_id": mandate_id, "items": [{"product_id": selected_product.id, "quantity": 1}]},
+                output={
+                    "success": False,
+                    "allowed": False,
+                    "decision_code": propose_res.decision_code,
+                    "reason": propose_res.message
+                }
+            ))
+
+            # Tool 4: explain_last_action
+            explain_res = ExplainService.explain_action(db, propose_res.action_id)
+            tools_invoked.append(ToolCallRecord(
+                tool="explain_last_action",
+                input={"action_id": propose_res.action_id},
+                output={"explanation": explain_res.explanation, "code": explain_res.code}
+            ))
+
+            # Tool 5: find_alternatives
+            alt_product = AgentService._execute_find_alternatives(db, trace_id, mandate_id, category=selected_product.category)
+            if alt_product:
+                alt_product_resp = ProductResponse.model_validate(alt_product)
+                tools_invoked.append(ToolCallRecord(
+                    tool="find_alternatives",
+                    input={"mandate_id": mandate_id, "category": selected_product.category},
+                    output={"alternative_id": alt_product.id, "name": alt_product.name, "price": alt_product.price}
+                ))
+
+            if propose_res.decision_code == "MANDATE_EXCEEDED":
+                diff = propose_res.details.get("difference", selected_product.price - mandate.max_amount)
+                alt_text = f" However, I found the **{alt_product.name}** for **₹{alt_product.price:,}** which fits strictly within your ₹{mandate.max_amount:,} limit." if alt_product else ""
+                assistant_message = (
+                    f"❌ **Transaction Blocked by Mandate Engine** (`MANDATE_EXCEEDED`)\n\n"
+                    f"I attempted to checkout the **{selected_product.name}** at **₹{selected_product.price:,}**, but the server-enforced mandate limits orders to **₹{mandate.max_amount:,}** "
+                    f"(exceeded by **₹{diff:,}**). No Razorpay payment order was created.\n\n"
+                    f"💡 **Recommended Alternative:**{alt_text}"
+                )
+            elif propose_res.decision_code == "CATEGORY_NOT_ALLOWED":
+                assistant_message = (
+                    f"❌ **Transaction Blocked** (`CATEGORY_NOT_ALLOWED`)\n\n"
+                    f"The product **{selected_product.name}** belongs to category `{selected_product.category}`, which is not permitted by your active mandate categories ({', '.join(mandate.allowed_categories)})."
+                )
+            elif propose_res.decision_code == "OUT_OF_STOCK":
+                assistant_message = (
+                    f"❌ **Transaction Blocked** (`OUT_OF_STOCK`)\n\n"
+                    f"The product **{selected_product.name}** is currently out of stock."
+                )
+            else:
+                assistant_message = f"❌ **Transaction Blocked:** {propose_res.message}"
+
+        return AgentChatResponse(
+            message=assistant_message,
+            conversation_id=conv_id,
+            trace_id=trace_id,
+            tools_invoked=tools_invoked,
+            products_considered=products_considered,
+            proposed_cart=proposed_cart,
+            cart_total=cart_total,
+            mandate_decision=mandate_decision_dict,
+            order_id=order_id,
+            alternative_product=alt_product_resp
+        )
