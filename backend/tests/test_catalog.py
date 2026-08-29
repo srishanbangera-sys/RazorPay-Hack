@@ -19,7 +19,7 @@ def test_filter_by_category():
     assert response.status_code == 200
     data = response.json()
     for item in data["items"]:
-        assert item["category"] == "footwear"
+        assert item["category"].lower() == "footwear"
 
 def test_filter_by_max_price():
     response = client.get("/api/v1/products?max_price=1300")

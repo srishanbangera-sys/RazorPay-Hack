@@ -165,7 +165,7 @@ class AgentService:
             selected_product = next((p for p in found_products if p.category == "electronics"), None)
         else:
             # Standard Scenario 1: Select Sprint Runner or primary matching footwear
-            selected_product = next((p for p in found_products if "sprint" in p.name.lower()), None)
+            selected_product = next((p for p in found_products if "sprint runner" in p.name.lower()), None)
             if not selected_product:
                 selected_product = next((p for p in found_products if "runner" in p.name.lower() or "shoe" in p.name.lower()), None)
             if not selected_product:

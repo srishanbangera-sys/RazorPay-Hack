@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     # LLM Providers
     OPENAI_API_KEY: Optional[str] = Field(default=None)
     ANTHROPIC_API_KEY: Optional[str] = Field(default=None)
+    GOOGLE_API_KEY: Optional[str] = Field(default=None)
     
     # Merchant Details
     MERCHANT_ID: str = Field(default="merchant_demo")
