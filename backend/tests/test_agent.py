@@ -24,6 +24,9 @@ def test_agent_scenario_1_success_flow():
     assert "search_catalog" in tool_names
     assert "propose_cart" in tool_names
     assert "checkout" in tool_names
+    # Verify Revenue Growth upsell recommendation within remaining budget
+    assert "Smart Revenue Growth Recommendation" in data["message"]
+    assert "Anti-Blister Running Socks" in data["message"]
 
 def test_agent_scenario_2_graceful_failure_flow():
     response = client.post(

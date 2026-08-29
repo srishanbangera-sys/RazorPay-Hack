@@ -164,8 +164,12 @@ class AgentService:
         elif is_electronics_query:
             selected_product = next((p for p in found_products if p.category == "electronics"), None)
         else:
-            # Standard Scenario 1: Select Sprint Runner or first affordable product
-            selected_product = next((p for p in found_products if "sprint" in p.name.lower() or p.price <= 1500), found_products[0] if found_products else None)
+            # Standard Scenario 1: Select Sprint Runner or primary matching footwear
+            selected_product = next((p for p in found_products if "sprint" in p.name.lower()), None)
+            if not selected_product:
+                selected_product = next((p for p in found_products if "runner" in p.name.lower() or "shoe" in p.name.lower()), None)
+            if not selected_product:
+                selected_product = next((p for p in found_products if p.price <= 1500), found_products[0] if found_products else None)
 
         if not selected_product:
             return AgentChatResponse(
@@ -225,10 +229,31 @@ class AgentService:
                 }
             ))
 
+            # Revenue Growth Agent: Check for intelligent complementary upsells within remaining capacity
+            remaining_budget = mandate.max_amount - selected_product.price
+            upsell_note = ""
+            if remaining_budget > 0:
+                complementary_items = CatalogService.get_products(
+                    db=db,
+                    category=selected_product.category,
+                    max_price=remaining_budget,
+                    in_stock=True
+                )
+                # Filter out the currently selected product
+                complementary_items = [p for p in complementary_items if p.id != selected_product.id and p.price <= remaining_budget]
+                if complementary_items:
+                    top_upsell = complementary_items[0]
+                    combined_total = selected_product.price + top_upsell.price
+                    upsell_note = (
+                        f"\n\n💡 **Smart Revenue Growth Recommendation:** You have **₹{remaining_budget:,}** remaining in your authorized mandate budget. "
+                        f"You could also add **{top_upsell.name}** for **₹{top_upsell.price:,}**, bringing your total to **₹{combined_total:,}** (still safely under your ₹{mandate.max_amount:,} limit)."
+                    )
+
             assistant_message = (
                 f"✅ **Purchase Approved!** I selected the **{selected_product.name}** for **₹{selected_product.price:,}**.\n\n"
                 f"The backend Mandate Engine validated that the cart total (₹{selected_product.price:,}) satisfies your mandate spending limit (₹{mandate.max_amount:,}) "
                 f"and allowed category (`{selected_product.category}`). Order `{confirm_res.order_id}` has been created and sent to Razorpay Test Mode."
+                f"{upsell_note}"
             )
         else:
             # Propose failed: Mandate Exceeded or other violation

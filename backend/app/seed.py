@@ -103,6 +103,24 @@ SEED_PRODUCTS = [
         "stock": 0,
         "category": "footwear",
         "attributes": {"type": "track", "sizes": ["9", "10"], "note": "Out of stock for testing"}
+    },
+    {
+        "id": "prod_011",
+        "name": "Anti-Blister Running Socks",
+        "description": "Ergonomic compression anti-blister sports running socks (1-pack).",
+        "price": 149,
+        "stock": 50,
+        "category": "footwear",
+        "attributes": {"type": "accessory", "sizes": ["M", "L"], "material": "Merino-CoolMax Blend"}
+    },
+    {
+        "id": "prod_012",
+        "name": "Cushioned Gel Insoles",
+        "description": "Shock-absorbing dual-gel orthotic replacement insoles for running shoes.",
+        "price": 199,
+        "stock": 35,
+        "category": "footwear",
+        "attributes": {"type": "accessory", "sizes": ["Universal Trim-to-Fit"], "arch": "High Support"}
     }
 ]
 
