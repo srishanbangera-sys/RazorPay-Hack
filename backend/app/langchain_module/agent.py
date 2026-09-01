@@ -3,9 +3,10 @@ Autonomous LangChain Product Agent with Tool Calling and Structured Reasoning.
 """
 
 from typing import List, Dict, Any, Optional
-import json
 import re
+# pyright: ignore[reportMissingImports]
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
+# pyright: ignore[reportMissingImports]
 from langchain_core.language_models.chat_models import BaseChatModel
 
 from app.langchain_module.tools import get_product_tools, _product_to_dict

@@ -3,13 +3,15 @@ LangChain Expression Language (LCEL) Chains for Product Details, Recommendations
 """
 
 from typing import Dict, Any, List, Optional
-import json
-from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
+# pyrefly: ignore [missing-import]
+from langchain_core.prompts import ChatPromptTemplate
+# pyrefly: ignore [missing-import]
 from langchain_core.output_parsers import StrOutputParser
+# pyrefly: ignore [missing-import]
 from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 
 from app.langchain_module.llm_factory import get_chat_model
-from app.langchain_module.tools import fetch_product_details_by_id, search_products_by_attributes, compare_products
+from app.langchain_module.tools import fetch_product_details_by_id, compare_products
 from app.langchain_module.retriever import ProductCatalogRetriever
 
 PRODUCT_DETAILS_PROMPT = ChatPromptTemplate.from_messages([

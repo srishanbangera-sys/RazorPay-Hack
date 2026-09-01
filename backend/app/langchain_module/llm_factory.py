@@ -5,9 +5,12 @@ Supports Google Gemini, OpenAI, Anthropic, and Offline Deterministic Execution.
 
 import os
 import logging
-from typing import Optional, Any, List, Dict
+from typing import Optional, Any, List
+# pyrefly: ignore [missing-import]
 from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.messages import BaseMessage, AIMessage, HumanMessage, SystemMessage, ToolMessage
+# pyrefly: ignore [missing-import]
+from langchain_core.messages import BaseMessage, AIMessage, HumanMessage
+# pyrefly: ignore [missing-import]
 from langchain_core.outputs import ChatResult, ChatGeneration
 
 from app.core.config import settings
@@ -152,6 +155,7 @@ def get_chat_model(
     # 1. Google Gemini (if requested or key present)
     if (preferred_provider == "google" or not preferred_provider) and google_key and not google_key.startswith("sk-"):
         try:
+            # pyrefly: ignore [missing-import]
             from langchain_google_genai import ChatGoogleGenerativeAI
             gemini_model = ChatGoogleGenerativeAI(
                 model="gemini-2.5-flash",
@@ -165,6 +169,7 @@ def get_chat_model(
     # 2. OpenAI
     if (preferred_provider == "openai" or not preferred_provider) and openai_key and openai_key.startswith("sk-"):
         try:
+            # pyrefly: ignore [missing-import]
             from langchain_openai import ChatOpenAI
             openai_model = ChatOpenAI(
                 model="gpt-4o-mini",
@@ -178,6 +183,7 @@ def get_chat_model(
     # 3. Anthropic
     if (preferred_provider == "anthropic" or not preferred_provider) and anthropic_key and anthropic_key.startswith("sk-ant-"):
         try:
+            # pyrefly: ignore [missing-import]
             from langchain_anthropic import ChatAnthropic
             anthropic_model = ChatAnthropic(
                 model="claude-3-5-sonnet-20241022",

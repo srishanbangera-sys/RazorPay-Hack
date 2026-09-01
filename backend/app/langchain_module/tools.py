@@ -5,6 +5,7 @@ Provides structured tools that can be bound to LangChain LLMs and agents.
 
 from typing import List, Optional, Dict, Any, Union
 import json
+# pyrefly: ignore [missing-import]
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 

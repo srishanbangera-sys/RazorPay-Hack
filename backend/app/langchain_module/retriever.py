@@ -3,8 +3,11 @@ LangChain Custom Catalog Retriever for Product Semantic and Structured Retrieval
 """
 
 from typing import List, Optional, Dict, Any
+# pyrefly: ignore [missing-import]
 from langchain_core.retrievers import BaseRetriever
+# pyrefly: ignore [missing-import]
 from langchain_core.documents import Document
+# pyrefly: ignore [missing-import]
 from langchain_core.callbacks.manager import CallbackManagerForRetrieverRun
 from pydantic import Field
 
