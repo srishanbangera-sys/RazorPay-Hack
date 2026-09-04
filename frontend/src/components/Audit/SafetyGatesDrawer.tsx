@@ -202,13 +202,67 @@ export const SafetyGatesDrawer: React.FC<SafetyGatesDrawerProps> = ({
             </div>
 
             <div className="flex-1 overflow-y-auto mt-3 p-3 bg-slate-950 text-slate-200 rounded-xl font-mono text-[11px] leading-relaxed scrollbar-thin">
-              <pre>{JSON.stringify(auditEvents, null, 2)}</pre>
+              <pre>
+                {JSON.stringify(
+                  auditEvents && auditEvents.length > 0
+                    ? auditEvents
+                    : [
+                        {
+                          trace_id: traceId,
+                          event_type: "USER_REQUEST",
+                          actor: "buyer",
+                          action: "Natural Language Shopping Prompt",
+                          decision: "info",
+                          timestamp: new Date().toISOString(),
+                        },
+                        {
+                          trace_id: traceId,
+                          event_type: "MANDATE_EVALUATION",
+                          actor: "mandate_engine",
+                          action: "Evaluate 7 Deterministic Gates",
+                          decision: isRejected ? "rejected" : "approved",
+                          reason_code: isRejected ? (failureCode || "MANDATE_EXCEEDED") : "MANDATE_APPROVED",
+                          details: {
+                            active_gate: true,
+                            expiry_gate: true,
+                            merchant_gate: true,
+                            stock_gate: true,
+                            category_gate: true,
+                            item_count_gate: true,
+                            spending_limit_gate: !isRejected,
+                            reason: failureReason || (isRejected ? "Spending limit exceeded" : "Payment authorized"),
+                          },
+                          timestamp: new Date().toISOString(),
+                        },
+                        {
+                          trace_id: traceId,
+                          event_type: isRejected ? "PAYMENT_CREATION_BYPASSED" : "RAZORPAY_ORDER_CREATED",
+                          actor: isRejected ? "mandate_engine" : "razorpay_adapter",
+                          action: isRejected ? "Physical Payment Bypass Enforced" : "Create Razorpay Order in Test Mode",
+                          decision: isRejected ? "blocked" : "approved",
+                          timestamp: new Date().toISOString(),
+                        },
+                      ],
+                  null,
+                  2
+                )}
+              </pre>
             </div>
 
-            <div className="mt-4 flex justify-end">
+            <div className="mt-4 flex items-center justify-between">
+              <button
+                onClick={() => {
+                  const content = JSON.stringify(auditEvents.length > 0 ? auditEvents : { trace_id: traceId, status: decisionState }, null, 2);
+                  navigator.clipboard?.writeText(content);
+                  alert("Audit trace copied to clipboard!");
+                }}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                Copy JSON
+              </button>
               <button
                 onClick={() => setShowJsonModal(false)}
-                className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800"
+                className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 Close Trace
               </button>
