@@ -5,14 +5,30 @@ import { Header } from "@/components/Header";
 import { AgentChat } from "@/components/Chat/AgentChat";
 import { MandateConsole } from "@/components/Console/MandateConsole";
 import { SafetyGatesDrawer } from "@/components/Audit/SafetyGatesDrawer";
+import { RazorpayModal } from "@/components/Payment/RazorpayModal";
 import { ChatMessage, MandateState, AuditEvent, Product } from "@/types";
 import { fetchMandateState, sendAgentMessage, fetchAuditTrail } from "@/services/api";
 
 export default function DashboardPage() {
   const [isAuditOpen, setIsAuditOpen] = useState(true);
+  const [isRazorpayOpen, setIsRazorpayOpen] = useState(false);
+  const [razorpayOrder, setRazorpayOrder] = useState<{
+    orderId?: string | null;
+    amount: number;
+    traceId?: string;
+  }>({
+    orderId: "ord_travel_auth",
+    amount: 189,
+    traceId: "ME-2048-7F31",
+  });
+
   const [isLoading, setIsLoading] = useState(false);
   const [activeTraceId, setActiveTraceId] = useState<string>("ME-2048-7F31");
   const [decisionState, setDecisionState] = useState<"approved" | "rejected" | "idle">("rejected");
+  const [failureReason, setFailureReason] = useState<string | undefined>(
+    "Spending limit failed — budget exceeded by $299."
+  );
+  const [failureCode, setFailureCode] = useState<string | undefined>("MANDATE_EXCEEDED");
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
 
   // Default active mandate state matching Figma UI
@@ -22,7 +38,7 @@ export default function DashboardPage() {
     max_amount: 800,
     spent_amount: 389,
     available_amount: 411,
-    allowed_categories: ["Travel gear", "Office", "Electronics"],
+    allowed_categories: ["Travel gear", "Footwear", "Office", "Electronics"],
     max_items_per_order: 4,
     expires_at: new Date(Date.now() + 2.6 * 86400000).toISOString(),
     time_remaining_formatted: "02d : 14h : 08m",
@@ -143,6 +159,14 @@ export default function DashboardPage() {
 
       const isApproved = res.mandate_decision?.allowed ?? (res.component_type === "approved_card");
       setDecisionState(isApproved ? "approved" : "rejected");
+      if (res.failure_details) {
+        setFailureReason(res.failure_details.reason);
+        setFailureCode(res.failure_details.code);
+      } else {
+        setFailureReason(undefined);
+        setFailureCode(undefined);
+      }
+
       if (res.trace_id) {
         setActiveTraceId(res.trace_id);
         fetchAuditTrail(res.trace_id).then(setAuditEvents);
@@ -175,7 +199,7 @@ export default function DashboardPage() {
         {
           id: `msg_err_${Date.now()}`,
           sender: "agent",
-          text: "⚠️ Connection error contacting the Mandate Engine backend.",
+          text: "⚠️ Connection error contacting the Mandate Engine backend. Please check that uvicorn is running.",
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
       ]);
@@ -186,6 +210,48 @@ export default function DashboardPage() {
 
   const handleSelectProduct = (product: Product) => {
     handleSendMessage(`I want to purchase the ${product.name} for ${mandate.currency_symbol}${product.price}.`);
+  };
+
+  const handleSelectCategory = (category: string) => {
+    handleSendMessage(`Show me available products in category ${category}.`);
+  };
+
+  const handleViewAudit = (
+    decision: "approved" | "rejected",
+    traceId?: string,
+    reason?: string,
+    code?: string
+  ) => {
+    setDecisionState(decision);
+    if (traceId) {
+      setActiveTraceId(traceId);
+      fetchAuditTrail(traceId).then(setAuditEvents);
+    }
+    if (reason) setFailureReason(reason);
+    if (code) setFailureCode(code);
+    setIsAuditOpen(true);
+  };
+
+  const handleOpenRazorpay = (order: {
+    orderId?: string | null;
+    amount: number;
+    traceId?: string;
+  }) => {
+    setRazorpayOrder(order);
+    setIsRazorpayOpen(true);
+  };
+
+  const handlePaymentSuccess = (paymentId: string) => {
+    fetchMandateState().then(setMandate);
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `msg_pay_success_${Date.now()}`,
+        sender: "agent",
+        text: `🎉 **Payment Captured!** Razorpay payment verification succeeded (Payment ID: \`${paymentId}\`). The transaction is now permanently finalized and recorded in the audit trail.`,
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      },
+    ]);
   };
 
   return (
@@ -205,13 +271,15 @@ export default function DashboardPage() {
           currencySymbol={mandate.currency_symbol}
           onSendMessage={handleSendMessage}
           onSelectProduct={handleSelectProduct}
-          onViewAudit={() => setIsAuditOpen(true)}
+          onViewAudit={handleViewAudit}
+          onOpenRazorpay={handleOpenRazorpay}
         />
 
         {/* Right Pane: Persistent Mandate Console */}
         <MandateConsole
           mandate={mandate}
-          onOpenAudit={() => setIsAuditOpen(true)}
+          onOpenAudit={() => handleViewAudit(decisionState, activeTraceId)}
+          onSelectCategory={handleSelectCategory}
         />
 
         {/* Slide-out Safety Gates 7-Step Stepper Drawer */}
@@ -221,9 +289,23 @@ export default function DashboardPage() {
           decisionState={decisionState}
           traceId={activeTraceId}
           auditEvents={auditEvents}
+          failureCode={failureCode}
+          failureReason={failureReason}
           currencySymbol={mandate.currency_symbol}
         />
       </main>
+
+      {/* Razorpay Test Mode Checkout Modal */}
+      <RazorpayModal
+        isOpen={isRazorpayOpen}
+        onClose={() => setIsRazorpayOpen(false)}
+        orderId={razorpayOrder.orderId}
+        amount={razorpayOrder.amount}
+        currencySymbol={mandate.currency_symbol}
+        traceId={razorpayOrder.traceId || activeTraceId}
+        merchantName="Apex Athletics & Gear"
+        onPaymentSuccess={handlePaymentSuccess}
+      />
     </div>
   );
 }
