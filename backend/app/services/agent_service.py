@@ -274,19 +274,65 @@ class AgentService:
                     alternative_product=alternative_item
                 )
             else:
-                # Scenario: Approved travel transaction ($189 <= $800)
-                cart_total = 189
+                # Determine which specific travel item or upsell is being purchased
+                is_upsell_added = any(w in user_msg for w in ["cube", "cubes", "add recycled", "upsell", "add "])
+                is_alt_selected = any(w in user_msg for w in ["bundle", "alternative", "764"])
+                is_daylight_selected = "daylight" in user_msg or "128" in user_msg
+                is_cabin_selected = "cabin" in user_msg or "roller" in user_msg or "214" in user_msg
+
+                if is_upsell_added:
+                    selected_main = transit_carryon
+                    cart_total = 211
+                    proposed_cart_detail = [
+                        CartItemDetail(product=transit_carryon, quantity=1, unit_price=189, subtotal=189),
+                        CartItemDetail(product=packing_cubes, quantity=1, unit_price=22, subtotal=22),
+                    ]
+                    success_msg = "✅ Recycled packing cubes (+$22) added to your order! Combined total is $211.00, well within your $800 limit. Mandate Engine authorized and order confirmed."
+                    upsell_for_card = None
+                elif is_alt_selected:
+                    selected_main = alternative_item
+                    cart_total = 764
+                    proposed_cart_detail = [
+                        CartItemDetail(product=alternative_item, quantity=1, unit_price=764, subtotal=764)
+                    ]
+                    success_msg = "✅ Compliant alternative selected! I have updated your order to the Compliant Travel Setup Bundle for $764.00 (within $800 limit). Mandate Engine authorized and order confirmed."
+                    upsell_for_card = None
+                elif is_daylight_selected:
+                    selected_main = daylight_pack
+                    cart_total = 128
+                    proposed_cart_detail = [
+                        CartItemDetail(product=daylight_pack, quantity=1, unit_price=128, subtotal=128)
+                    ]
+                    success_msg = "✅ Daylight Pack selected for $128.00! Well within your $800 mandate budget. Mandate Engine authorized and order confirmed."
+                    upsell_for_card = packing_cubes
+                elif is_cabin_selected:
+                    selected_main = cabin_roller
+                    cart_total = 214
+                    proposed_cart_detail = [
+                        CartItemDetail(product=cabin_roller, quantity=1, unit_price=214, subtotal=214)
+                    ]
+                    success_msg = "✅ Cabin Roller selected for $214.00! Well within your $800 mandate budget. Mandate Engine authorized and order confirmed."
+                    upsell_for_card = packing_cubes
+                else:
+                    selected_main = transit_carryon
+                    cart_total = 189
+                    proposed_cart_detail = [
+                        CartItemDetail(product=transit_carryon, quantity=1, unit_price=189, subtotal=189)
+                    ]
+                    success_msg = "I found three compliant options from approved merchants. The first balances durability and total cost."
+                    upsell_for_card = packing_cubes
+
                 action_id = f"act_{uuid.uuid4().hex[:10]}"
                 order_id = f"order_{uuid.uuid4().hex[:10]}"
 
                 tools_invoked.append(ToolCallRecord(
                     tool="propose_cart",
-                    input={"mandate_id": mandate_id, "product_id": "travel_001", "quantity": 1},
-                    output={"allowed": True, "cart_total": 189, "decision_code": "MANDATE_APPROVED"}
+                    input={"mandate_id": mandate_id, "product_id": selected_main.id, "quantity": 1},
+                    output={"allowed": True, "cart_total": cart_total, "decision_code": "MANDATE_APPROVED"}
                 ))
                 tools_invoked.append(ToolCallRecord(
                     tool="checkout",
-                    input={"cart_total": 189},
+                    input={"cart_total": cart_total},
                     output={"success": True, "order_id": order_id, "decision_code": "MANDATE_APPROVED"}
                 ))
 
@@ -298,36 +344,29 @@ class AgentService:
                     action="Mandate Decision: " + action_id,
                     decision="approved",
                     reason_code="MANDATE_APPROVED",
-                    input_data={"cart_total": 189, "mandate_id": mandate_id, "action_id": action_id},
-                    output_data={"cart_total": 189, "max_amount": 800, "action_id": action_id}
+                    input_data={"cart_total": cart_total, "mandate_id": mandate_id, "action_id": action_id},
+                    output_data={"cart_total": cart_total, "max_amount": 800, "action_id": action_id}
                 )
 
-                proposed_cart_detail = [CartItemDetail(
-                    product=transit_carryon,
-                    quantity=1,
-                    unit_price=189,
-                    subtotal=189
-                )]
-
                 return AgentChatResponse(
-                    message="I found three compliant options from approved merchants. The first balances durability and total cost.",
+                    message=success_msg,
                     conversation_id=conv_id,
                     trace_id=trace_id,
                     tools_invoked=tools_invoked,
                     products_considered=travel_carousel,
                     carousel_products=travel_carousel,
                     proposed_cart=proposed_cart_detail,
-                    cart_total=189,
+                    cart_total=cart_total,
                     mandate_decision={
                         "allowed": True,
                         "decision_code": "MANDATE_APPROVED",
                         "message": "Payment authorized.",
-                        "details": {"cart_total": 189, "max_amount": 800}
+                        "details": {"cart_total": cart_total, "max_amount": 800}
                     },
                     order_id=order_id,
                     component_type="approved_card",
                     action_id=action_id,
-                    upsell_item=packing_cubes
+                    upsell_item=upsell_for_card
                 )
 
         # Standard / Athletic / Footwear & General Catalog Intent
