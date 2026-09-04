@@ -959,7 +959,7 @@ def seed_db():
         # Seed Default Mandate
         demo_mandate = db.query(Mandate).filter(Mandate.id == "mandate_demo").first()
         allowed_cats = [
-            "Footwear", "footwear",
+            "Footwear", "footwear", "Travel gear", "Office", "Electronics",
             "Fruit & Herbal", "Rooibos", "Black Tea", "Green & White", 
             "Teaware & Gifts", "Pyramid Teabags", "Tea", "Teas"
         ]
@@ -967,17 +967,17 @@ def seed_db():
             mandate = Mandate(
                 id="mandate_demo",
                 merchant_id="merchant_demo",
-                max_amount=5000,
+                max_amount=1500,
                 allowed_categories=allowed_cats,
-                max_items_per_order=10,
+                max_items_per_order=1,
                 expires_at=datetime.now(timezone.utc) + timedelta(days=180),
                 status="active"
             )
             db.add(mandate)
         else:
-            demo_mandate.max_amount = 5000
+            demo_mandate.max_amount = 1500
             demo_mandate.allowed_categories = allowed_cats
-            demo_mandate.max_items_per_order = 10
+            demo_mandate.max_items_per_order = 1
             demo_mandate.status = "active"
 
         db.commit()
