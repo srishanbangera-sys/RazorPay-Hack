@@ -244,18 +244,6 @@ class AgentService:
                     output_data={"difference": 299, "max_amount": 800, "action_id": action_id}
                 )
 
-                alternative_item = ProductResponse(
-                    id="travel_alt_bundle",
-                    name="Compliant Travel Setup Bundle",
-                    brand="Atlas & Aero",
-                    category="Travel gear",
-                    price=764,
-                    stock=5,
-                    rating=4.8,
-                    stock_status="in_stock",
-                    specification="Compliant alternative within $800 limit"
-                )
-
                 return AgentChatResponse(
                     message="I found three compliant options from approved merchants. The first balances durability and total cost.",
                     conversation_id=conv_id,
