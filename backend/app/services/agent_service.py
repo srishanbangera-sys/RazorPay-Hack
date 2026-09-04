@@ -126,7 +126,7 @@ class AgentService:
         alt_product_resp: Optional[ProductResponse] = None
         assistant_message = ""
         cart_total: Optional[int] = None
-
+        is_shoes_query = any(w in user_msg for w in ["shoe", "shoes", "runner", "running", "footwear", "1500", "sprint"])
         is_travel_scenario = any(w in user_msg for w in ["travel", "carry-on", "carry on", "luggage", "pack", "roller", "trip", "flight", "transit", "cabin", "setup"])
         is_travel_blocked = is_travel_scenario and any(w in user_msg for w in ["1099", "luxury", "rimowa", "expensive", "trunk", "blocked"])
 
