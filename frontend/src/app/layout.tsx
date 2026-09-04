@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Mandate • Autonomous Commerce, Governed",
-  description: "Bounded Autonomous AI Commerce with Deterministic Server-Side Mandate Enforcement",
+  title: "razorpay-autonomous-merchant • A Smart AI Agent for E-commerce",
+  description: "AI Agent for E-commerce transactions",
 };
 
 export default function RootLayout({
