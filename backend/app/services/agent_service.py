@@ -185,6 +185,17 @@ class AgentService:
                 sizes_or_capacity="3 Piece",
                 attributes={"brand": "EcoTravel"}
             )
+            alternative_item = ProductResponse(
+                id="travel_alt_bundle",
+                name="Compliant Travel Setup Bundle",
+                brand="Atlas & Aero",
+                category="Travel gear",
+                price=764,
+                stock=5,
+                rating=4.8,
+                stock_status="in_stock",
+                specification="Compliant alternative within $800 limit"
+            )
 
             travel_carousel = [transit_carryon, daylight_pack, cabin_roller]
 
