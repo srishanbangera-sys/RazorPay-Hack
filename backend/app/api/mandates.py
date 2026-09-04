@@ -27,10 +27,17 @@ def get_active_mandate(db: Session = Depends(get_db)):
     return MandateResponse.model_validate(mandate)
 
 @router.get("/active/state", response_model=MandateStateResponse)
-def get_active_mandate_state(db: Session = Depends(get_db)):
-    state = MandateService.get_mandate_state(db)
+def get_active_mandate_state(mandate_id: Optional[str] = Query(None), db: Session = Depends(get_db)):
+    state = MandateService.get_mandate_state(db, mandate_id=mandate_id)
     if not state:
         raise HTTPException(status_code=404, detail="No active mandate state found")
+    return state
+
+@router.get("/{mandate_id}/state", response_model=MandateStateResponse)
+def get_mandate_state_by_id(mandate_id: str, db: Session = Depends(get_db)):
+    state = MandateService.get_mandate_state(db, mandate_id=mandate_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="Mandate state not found")
     return state
 
 

@@ -135,13 +135,13 @@ export default function DashboardPage() {
 
   // Load live mandate state from backend on mount
   useEffect(() => {
-    fetchMandateState().then((state) => {
+    fetchMandateState(mandate.id).then((state) => {
       if (state) setMandate(state);
     });
     fetchAuditTrail().then((events) => {
       if (events && events.length > 0) setAuditEvents(events);
     });
-  }, []);
+  }, [mandate.id]);
 
   const handleSendMessage = async (text: string) => {
     const userMsg: ChatMessage = {

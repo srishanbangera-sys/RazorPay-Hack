@@ -980,6 +980,27 @@ def seed_db():
             demo_mandate.max_items_per_order = 1
             demo_mandate.status = "active"
 
+        # Seed Travel Mandate (matches Figma UI specification)
+        travel_mandate = db.query(Mandate).filter(Mandate.id == "mandate_travel").first()
+        travel_cats = ["Travel gear", "Office", "Electronics", "Footwear"]
+        if not travel_mandate:
+            mandate = Mandate(
+                id="mandate_travel",
+                merchant_id="merchant_demo",
+                max_amount=800,
+                allowed_categories=travel_cats,
+                max_items_per_order=4,
+                expires_at=datetime.now(timezone.utc) + timedelta(days=2, hours=14, minutes=8),
+                status="active"
+            )
+            db.add(mandate)
+        else:
+            travel_mandate.max_amount = 800
+            travel_mandate.allowed_categories = travel_cats
+            travel_mandate.max_items_per_order = 4
+            travel_mandate.expires_at = datetime.now(timezone.utc) + timedelta(days=2, hours=14, minutes=8)
+            travel_mandate.status = "active"
+
         db.commit()
         print(f"Database seeded successfully with {len(SEED_PRODUCTS)} products and demo mandate.")
     finally:
