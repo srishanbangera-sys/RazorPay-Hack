@@ -15,6 +15,241 @@ from app.models.mandate import Mandate
 
 SEED_PRODUCTS = [
     {
+        "id": "tea_001",
+        "name": "Teddy Bear's Choice Fruit Tea",
+        "brand": "Jenier World of Teas",
+        "description": "A deliciously sweet, ruby-red infusion of dried elderberries, ripe blackcurrants, hibiscus petals, and blueberries. Naturally caffeine-free, packed with antioxidants, and irresistible hot or over ice.",
+        "category": "Fruit & Herbal",
+        "product_type": "Fruit Infusion",
+        "price": 990,
+        "cost_price": 450,
+        "stock": 45,
+        "rating": 4.9,
+        "sales_count": 520,
+        "views": 3410,
+        "conversion_rate": 0.152,
+        "color": "Ruby Red",
+        "sizes_or_capacity": "50g Loose,100g Pouch,15 Pyramids,50 Pyramids",
+        "specification": "100% Caffeine Free",
+        "profit_per_unit": 540,
+        "estimated_revenue": 514800,
+        "estimated_profit": 280800,
+        "stock_status": "in_stock",
+        "attributes": {
+            "brand": "Jenier World of Teas",
+            "type": "Fruit Infusion",
+            "badge": "BEST BUY",
+            "badge_color": "green",
+            "origin": "Black Forest, Germany",
+            "caffeine_level": "None (0mg)",
+            "steeping_temp": "100°C",
+            "steeping_time": "5 - 8 mins",
+            "ingredients": ["Elderberries", "Blackcurrants", "Hibiscus Petals", "Blueberries", "Natural Fruit Flavours"],
+            "image_url": "https://images.unsplash.com/photo-1597481499750-3e6b22637e12?w=600&auto=format&fit=crop&q=80",
+            "packaging_options": [
+                {"label": "50g Loose Leaf", "price": 9.90, "sku": "TB-50G"},
+                {"label": "100g Pouch", "price": 16.90, "sku": "TB-100G"},
+                {"label": "15 Biodegradable Pyramids", "price": 11.50, "sku": "TB-15P"},
+                {"label": "50 Biodegradable Pyramids", "price": 29.90, "sku": "TB-50P"}
+            ]
+        }
+    },
+    {
+        "id": "tea_002",
+        "name": "Zesty Lemon Rooibos Tea",
+        "brand": "Jenier World of Teas",
+        "description": "Premium organic South African red bush rooibos blended with sun-ripened Mediterranean lemon peel, fragrant lemongrass, and golden calendula petals. Bright, aromatic, and deeply soothing.",
+        "category": "Rooibos",
+        "product_type": "Herbal Infusion",
+        "price": 840,
+        "cost_price": 380,
+        "stock": 38,
+        "rating": 4.8,
+        "sales_count": 480,
+        "views": 2950,
+        "conversion_rate": 0.162,
+        "color": "Amber Gold",
+        "sizes_or_capacity": "50g Loose,100g Pouch,15 Pyramids,50 Pyramids",
+        "specification": "Naturally Caffeine Free",
+        "profit_per_unit": 460,
+        "estimated_revenue": 403200,
+        "estimated_profit": 220800,
+        "stock_status": "in_stock",
+        "attributes": {
+            "brand": "Jenier World of Teas",
+            "type": "Herbal Infusion",
+            "badge": "BEST BUY",
+            "badge_color": "green",
+            "origin": "Cederberg Mountains, South Africa",
+            "caffeine_level": "None (0mg)",
+            "steeping_temp": "100°C",
+            "steeping_time": "4 - 6 mins",
+            "ingredients": ["Organic Rooibos", "Lemon Peel", "Lemongrass", "Calendula Petals", "Natural Lemon Essence"],
+            "image_url": "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=600&auto=format&fit=crop&q=80",
+            "packaging_options": [
+                {"label": "50g Loose Leaf", "price": 8.40, "sku": "ZL-50G"},
+                {"label": "100g Pouch", "price": 14.90, "sku": "ZL-100G"},
+                {"label": "15 Biodegradable Pyramids", "price": 9.90, "sku": "ZL-15P"},
+                {"label": "50 Biodegradable Pyramids", "price": 26.50, "sku": "ZL-50P"}
+            ]
+        }
+    },
+    {
+        "id": "tea_003",
+        "name": "Yorkshire Harrogate Everyday Tea",
+        "brand": "Jenier World of Teas",
+        "description": "An authentic, robust British breakfast blend of rich Assam and brisk high-grown Kenyan black teas. Designed to deliver an invigorating amber cup with exceptional strength and malty depth.",
+        "category": "Black Tea",
+        "product_type": "Black Tea",
+        "price": 840,
+        "cost_price": 360,
+        "stock": 60,
+        "rating": 4.9,
+        "sales_count": 680,
+        "views": 4120,
+        "conversion_rate": 0.165,
+        "color": "Deep Mahogany",
+        "sizes_or_capacity": "50g Loose,100g Pouch,15 Pyramids,50 Pyramids",
+        "specification": "High Caffeine (45mg)",
+        "profit_per_unit": 480,
+        "estimated_revenue": 571200,
+        "estimated_profit": 326400,
+        "stock_status": "in_stock",
+        "attributes": {
+            "brand": "Jenier World of Teas",
+            "type": "Black Tea",
+            "badge": "NEW",
+            "badge_color": "orange",
+            "origin": "Assam, India & Kericho, Kenya",
+            "caffeine_level": "High (45mg)",
+            "steeping_temp": "100°C",
+            "steeping_time": "3 - 5 mins",
+            "ingredients": ["100% Pure Fine Cut Black Teas"],
+            "image_url": "https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=600&auto=format&fit=crop&q=80",
+            "packaging_options": [
+                {"label": "50g Loose Leaf", "price": 8.40, "sku": "YH-50G"},
+                {"label": "100g Pouch", "price": 14.50, "sku": "YH-100G"},
+                {"label": "15 Biodegradable Pyramids", "price": 9.90, "sku": "YH-15P"},
+                {"label": "50 Biodegradable Pyramids", "price": 25.90, "sku": "YH-50P"}
+            ]
+        }
+    },
+    {
+        "id": "tea_004",
+        "name": "Earl Grey Supreme Biodegradable Pyramids",
+        "brand": "Jenier World of Teas",
+        "description": "Selected whole-leaf Ceylon OP black tea delicately scented with cold-pressed Italian bergamot essential oil and adorned with blue cornflower petals.",
+        "category": "Black Tea",
+        "product_type": "Flavoured Black",
+        "price": 1150,
+        "cost_price": 500,
+        "stock": 50,
+        "rating": 4.9,
+        "sales_count": 430,
+        "views": 3100,
+        "conversion_rate": 0.138,
+        "color": "Amber Russet",
+        "sizes_or_capacity": "15 Pyramids,50 Pyramids,100g Loose",
+        "specification": "Medium Caffeine (35mg)",
+        "profit_per_unit": 650,
+        "estimated_revenue": 494500,
+        "estimated_profit": 279500,
+        "stock_status": "in_stock",
+        "attributes": {
+            "brand": "Jenier World of Teas",
+            "type": "Flavoured Black",
+            "badge": "BEST BUY",
+            "badge_color": "green",
+            "origin": "Dimbula, Sri Lanka & Calabria, Italy",
+            "caffeine_level": "Medium (35mg)",
+            "steeping_temp": "95°C",
+            "steeping_time": "3 - 4 mins",
+            "ingredients": ["Ceylon Black Tea", "Natural Cold-Pressed Bergamot Oil", "Cornflower Petals"],
+            "image_url": "https://images.unsplash.com/photo-1587593810167-a84920ea0781?w=600&auto=format&fit=crop&q=80",
+            "packaging_options": [
+                {"label": "15 Biodegradable Pyramids", "price": 11.50, "sku": "EG-15P"},
+                {"label": "50 Biodegradable Pyramids", "price": 31.00, "sku": "EG-50P"},
+                {"label": "100g Pouch", "price": 18.00, "sku": "EG-100G"}
+            ]
+        }
+    },
+    {
+        "id": "tea_005",
+        "name": "Japanese Sencha Organic Green Tea",
+        "brand": "Jenier World of Teas",
+        "description": "Tender spring first-flush steamed green tea leaves from organic gardens in Kagoshima. Clean jade liquor with rich umami and refreshing vegetal sweetness.",
+        "category": "Green & White",
+        "product_type": "Green Tea",
+        "price": 1290,
+        "cost_price": 600,
+        "stock": 32,
+        "rating": 4.8,
+        "sales_count": 310,
+        "views": 2400,
+        "conversion_rate": 0.129,
+        "color": "Vibrant Jade",
+        "sizes_or_capacity": "50g Loose,100g Pouch,15 Pyramids",
+        "specification": "Low Caffeine (20mg)",
+        "profit_per_unit": 690,
+        "estimated_revenue": 399900,
+        "estimated_profit": 213900,
+        "stock_status": "in_stock",
+        "attributes": {
+            "brand": "Jenier World of Teas",
+            "type": "Green Tea",
+            "badge": "ORGANIC",
+            "badge_color": "emerald",
+            "origin": "Kagoshima, Japan",
+            "caffeine_level": "Low (20mg)",
+            "steeping_temp": "80°C",
+            "steeping_time": "2 - 3 mins",
+            "ingredients": ["100% Certified Organic Japanese Green Tea"],
+            "image_url": "https://images.unsplash.com/photo-1627435601361-ec25f5b1d0e5?w=600&auto=format&fit=crop&q=80",
+            "packaging_options": [
+                {"label": "50g Loose Leaf", "price": 12.90, "sku": "JS-50G"},
+                {"label": "100g Pouch", "price": 22.50, "sku": "JS-100G"},
+                {"label": "15 Biodegradable Pyramids", "price": 13.90, "sku": "JS-15P"}
+            ]
+        }
+    },
+    {
+        "id": "tea_006",
+        "name": "Artisan Borosilicate Glass Teapot (800ml)",
+        "brand": "Jenier World of Teas",
+        "description": "Ultra-clear thermal shock resistant borosilicate glass teapot complete with an ultra-fine stainless steel infuser basket. Ideal for watching pyramid teabags and loose leaves unfurl.",
+        "category": "Teaware & Gifts",
+        "product_type": "Teaware",
+        "price": 2490,
+        "cost_price": 1100,
+        "stock": 18,
+        "rating": 4.9,
+        "sales_count": 210,
+        "views": 1980,
+        "conversion_rate": 0.106,
+        "color": "Clear Glass / Stainless Steel",
+        "sizes_or_capacity": "800ml Capacity",
+        "specification": "Borosilicate Heat Resistant",
+        "profit_per_unit": 1390,
+        "estimated_revenue": 522900,
+        "estimated_profit": 291900,
+        "stock_status": "in_stock",
+        "attributes": {
+            "brand": "Jenier World of Teas",
+            "type": "Teaware",
+            "badge": "NEW",
+            "badge_color": "orange",
+            "origin": "Artisan Glassworks",
+            "caffeine_level": "N/A",
+            "steeping_temp": "Up to 150°C",
+            "steeping_time": "N/A",
+            "ingredients": ["Borosilicate Glass", "304 Food-Grade Stainless Steel"],
+            "image_url": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=600&auto=format&fit=crop&q=80",
+            "packaging_options": [
+                {"label": "800ml Glass Teapot + Infuser", "price": 24.90, "sku": "TP-800ML"}
+            ]
+        }
+    },
+    {
         "id": "prod_001",
         "name": "Sprint Runner",
         "brand": "Velocity",
@@ -723,21 +958,26 @@ def seed_db():
         
         # Seed Default Mandate
         demo_mandate = db.query(Mandate).filter(Mandate.id == "mandate_demo").first()
+        allowed_cats = [
+            "Footwear", "footwear",
+            "Fruit & Herbal", "Rooibos", "Black Tea", "Green & White", 
+            "Teaware & Gifts", "Pyramid Teabags", "Tea", "Teas"
+        ]
         if not demo_mandate:
             mandate = Mandate(
                 id="mandate_demo",
                 merchant_id="merchant_demo",
-                max_amount=1500,
-                allowed_categories=["Footwear", "footwear"],
-                max_items_per_order=1,
+                max_amount=5000,
+                allowed_categories=allowed_cats,
+                max_items_per_order=10,
                 expires_at=datetime.now(timezone.utc) + timedelta(days=180),
                 status="active"
             )
             db.add(mandate)
         else:
-            demo_mandate.max_amount = 1500
-            demo_mandate.allowed_categories = ["Footwear", "footwear"]
-            demo_mandate.max_items_per_order = 1
+            demo_mandate.max_amount = 5000
+            demo_mandate.allowed_categories = allowed_cats
+            demo_mandate.max_items_per_order = 10
             demo_mandate.status = "active"
 
         db.commit()
@@ -747,3 +987,4 @@ def seed_db():
 
 if __name__ == "__main__":
     seed_db()
+
