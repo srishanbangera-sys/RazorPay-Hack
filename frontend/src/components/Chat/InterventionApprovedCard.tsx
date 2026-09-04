@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Check, ShieldCheck, Sparkles, ExternalLink } from "lucide-react";
+import { Check, ShieldCheck, Sparkles, CreditCard } from "lucide-react";
 import { Product } from "@/types";
 
 interface InterventionApprovedCardProps {
