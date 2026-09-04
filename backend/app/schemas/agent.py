@@ -25,3 +25,11 @@ class AgentChatResponse(BaseModel):
     mandate_decision: Optional[Dict[str, Any]] = None
     order_id: Optional[str] = None
     alternative_product: Optional[ProductResponse] = None
+    # Rich UI Component Payloads
+    component_type: Optional[str] = None  # "carousel" | "approved_card" | "rejected_card" | "comparison"
+    carousel_products: List[ProductResponse] = Field(default_factory=list)
+    upsell_item: Optional[ProductResponse] = None
+    action_id: Optional[str] = None
+    failure_details: Optional[Dict[str, Any]] = None
+    comparison_matrix: Optional[Dict[str, Any]] = None
+

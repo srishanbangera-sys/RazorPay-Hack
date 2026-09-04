@@ -29,3 +29,20 @@ class MandateResponse(MandateBase):
 class MandateListResponse(BaseModel):
     items: List[MandateResponse]
     total: int
+
+class MandateStateResponse(BaseModel):
+    id: str
+    merchant_id: str
+    max_amount: int
+    spent_amount: int
+    available_amount: int
+    allowed_categories: List[str]
+    max_items_per_order: int
+    expires_at: datetime
+    time_remaining_formatted: str
+    time_remaining_seconds: int
+    status: str
+    is_active: bool
+    payment_source: str = "Operations wallet • 8042"
+    currency_symbol: str = "$"
+

@@ -2,7 +2,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.schemas.mandate import MandateResponse, MandateListResponse, MandateCreate, MandateUpdate
+from app.schemas.mandate import MandateResponse, MandateListResponse, MandateCreate, MandateUpdate, MandateStateResponse
 from app.services.mandate_service import MandateService
 
 router = APIRouter(prefix="/mandates", tags=["Mandates"])
@@ -25,6 +25,14 @@ def get_active_mandate(db: Session = Depends(get_db)):
     if not mandate:
         raise HTTPException(status_code=404, detail="No active mandate found")
     return MandateResponse.model_validate(mandate)
+
+@router.get("/active/state", response_model=MandateStateResponse)
+def get_active_mandate_state(db: Session = Depends(get_db)):
+    state = MandateService.get_mandate_state(db)
+    if not state:
+        raise HTTPException(status_code=404, detail="No active mandate state found")
+    return state
+
 
 @router.get("/{mandate_id}", response_model=MandateResponse)
 def get_mandate(mandate_id: str, db: Session = Depends(get_db)):
