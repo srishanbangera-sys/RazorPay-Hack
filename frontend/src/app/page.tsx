@@ -217,7 +217,7 @@ export default function DashboardPage() {
   };
 
   const handleViewAudit = (
-    decision: "approved" | "rejected",
+    decision: "approved" | "rejected" | "idle",
     traceId?: string,
     reason?: string,
     code?: string

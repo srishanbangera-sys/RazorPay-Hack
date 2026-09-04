@@ -104,3 +104,21 @@ export async function explainAction(actionId: string) {
   if (!res.ok) return null;
   return res.json();
 }
+
+export async function verifyPayment(payload: {
+  order_id: string;
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+  trace_id?: string;
+}) {
+  const res = await fetch(`${API_BASE}/payments/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw new Error("Payment verification failed");
+  }
+  return res.json();
+}
