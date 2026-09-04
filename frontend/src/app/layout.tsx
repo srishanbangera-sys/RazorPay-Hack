@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "razorpay-autonomous-merchant • A Smart AI Agent for E-commerce",
+  title: "Razorpay Autonomous Merchant • Smart AI Agent for Ecommerce",
   description: "AI Agent for E-commerce transactions",
 };
 

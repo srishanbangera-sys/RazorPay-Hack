@@ -18,30 +18,24 @@ export const Header: React.FC<HeaderProps> = ({ onToggleAudit, isAuditOpen }) =>
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-base font-bold tracking-tight text-slate-900 leading-none">
-              Mandate
+              Razorpay Autonomous Merchant
             </h1>
           </div>
           <p className="text-[11px] text-slate-500 font-medium leading-tight mt-0.5">
-            Autonomous commerce, governed
+            Smart AI Agent for E-commerce transactions
           </p>
         </div>
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Figma green status badge */}
-        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50/80 border border-emerald-200 text-emerald-800 text-xs font-medium shadow-xs">
-          <Lock className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Wallet held by Mandate Engine</span>
-        </div>
 
         {/* Audit Drawer Toggle Button */}
         <button
           onClick={onToggleAudit}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all shadow-xs ${
-            isAuditOpen
-              ? "bg-slate-900 text-white"
-              : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
-          }`}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all shadow-xs ${isAuditOpen
+            ? "bg-slate-900 text-white"
+            : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
+            }`}
           title="Toggle 7-Gate Safety Verification Panel"
         >
           <Activity className="w-3.5 h-3.5 text-emerald-400" />
