@@ -127,6 +127,210 @@ class AgentService:
         assistant_message = ""
         cart_total: Optional[int] = None
 
+        is_travel_scenario = any(w in user_msg for w in ["travel", "carry-on", "carry on", "luggage", "pack", "roller", "trip", "flight", "transit", "cabin", "setup"])
+        is_travel_blocked = is_travel_scenario and any(w in user_msg for w in ["1099", "luxury", "rimowa", "expensive", "trunk", "blocked"])
+
+        # Travel Scenario from Figma UI
+        if is_travel_scenario and not is_shoes_query:
+            # Deterministic Figma travel items
+            transit_carryon = ProductResponse(
+                id="travel_001",
+                name="Transit Carry-on",
+                brand="Aero Goods",
+                category="Travel gear",
+                price=189,
+                stock=12,
+                rating=4.8,
+                stock_status="in_stock",
+                specification="38L • 2.9kg",
+                sizes_or_capacity="38L",
+                attributes={"brand": "Aero Goods", "capacity": "38L"}
+            )
+            daylight_pack = ProductResponse(
+                id="travel_002",
+                name="Daylight Pack",
+                brand="Northline",
+                category="Travel gear",
+                price=128,
+                stock=18,
+                rating=4.7,
+                stock_status="in_stock",
+                specification="32L • 0.9kg",
+                sizes_or_capacity="32L",
+                attributes={"brand": "Northline", "capacity": "32L"}
+            )
+            cabin_roller = ProductResponse(
+                id="travel_003",
+                name="Cabin Roller",
+                brand="Atlas Supply",
+                category="Travel gear",
+                price=214,
+                stock=9,
+                rating=4.9,
+                stock_status="in_stock",
+                specification="40L • 3.4kg",
+                sizes_or_capacity="40L",
+                attributes={"brand": "Atlas Supply", "capacity": "40L"}
+            )
+            packing_cubes = ProductResponse(
+                id="travel_004",
+                name="recycled packing cubes",
+                brand="EcoTravel",
+                category="Travel gear",
+                price=22,
+                stock=50,
+                rating=4.6,
+                stock_status="in_stock",
+                specification="Set of 3",
+                sizes_or_capacity="3 Piece",
+                attributes={"brand": "EcoTravel"}
+            )
+
+            travel_carousel = [transit_carryon, daylight_pack, cabin_roller]
+
+            tools_invoked.append(ToolCallRecord(
+                tool="search_catalog",
+                input={"query": "travel setup carry-on", "category": "Travel gear"},
+                output={"count": 3, "products": [p.name for p in travel_carousel]}
+            ))
+
+            if is_travel_blocked:
+                # Scenario: Blocked travel transaction ($1099 > $800)
+                cart_total = 1099
+                action_id = f"act_{uuid.uuid4().hex[:10]}"
+                diff = 299
+
+                tools_invoked.append(ToolCallRecord(
+                    tool="propose_cart",
+                    input={"mandate_id": mandate_id, "cart_total": 1099, "items": 3},
+                    output={"allowed": False, "decision_code": "MANDATE_EXCEEDED", "difference": 299}
+                ))
+                tools_invoked.append(ToolCallRecord(
+                    tool="checkout",
+                    input={"cart_total": 1099},
+                    output={"success": False, "allowed": False, "reason": "MANDATE_EXCEEDED"}
+                ))
+                tools_invoked.append(ToolCallRecord(
+                    tool="explain_last_action",
+                    input={"action_id": action_id},
+                    output={"explanation": "Spending limit failed — budget exceeded by $299."}
+                ))
+                tools_invoked.append(ToolCallRecord(
+                    tool="find_alternatives",
+                    input={"budget": 800},
+                    output={"alternative": "Compliant travel alternative at $764"}
+                ))
+
+                AuditService.log_event(
+                    db=db,
+                    trace_id=trace_id,
+                    actor="mandate_engine",
+                    event_type="MANDATE_REJECTED",
+                    action="Confirm Checkout Blocked",
+                    decision="rejected",
+                    reason_code="MANDATE_EXCEEDED",
+                    input_data={"cart_total": 1099, "mandate_id": mandate_id},
+                    output_data={"difference": 299, "max_amount": 800, "action_id": action_id}
+                )
+
+                alternative_item = ProductResponse(
+                    id="travel_alt_bundle",
+                    name="Compliant Travel Setup Bundle",
+                    brand="Atlas & Aero",
+                    category="Travel gear",
+                    price=764,
+                    stock=5,
+                    rating=4.8,
+                    stock_status="in_stock",
+                    specification="Compliant alternative within $800 limit"
+                )
+
+                return AgentChatResponse(
+                    message="I found three compliant options from approved merchants. The first balances durability and total cost.",
+                    conversation_id=conv_id,
+                    trace_id=trace_id,
+                    tools_invoked=tools_invoked,
+                    products_considered=travel_carousel,
+                    carousel_products=travel_carousel,
+                    proposed_cart=[],
+                    cart_total=cart_total,
+                    mandate_decision={
+                        "allowed": False,
+                        "decision_code": "MANDATE_EXCEEDED",
+                        "message": "Spending limit failed — budget exceeded by $299.",
+                        "details": {"cart_total": 1099, "max_amount": 800, "difference": 299}
+                    },
+                    component_type="rejected_card",
+                    action_id=action_id,
+                    failure_details={
+                        "cart_total": 1099,
+                        "max_amount": 800,
+                        "difference": 299,
+                        "items_count": 3,
+                        "reason": "Spending limit failed — budget exceeded by $299.",
+                        "code": "MANDATE_EXCEEDED",
+                        "alternative_price": 764
+                    },
+                    alternative_product=alternative_item
+                )
+            else:
+                # Scenario: Approved travel transaction ($189 <= $800)
+                cart_total = 189
+                action_id = f"act_{uuid.uuid4().hex[:10]}"
+                order_id = f"order_{uuid.uuid4().hex[:10]}"
+
+                tools_invoked.append(ToolCallRecord(
+                    tool="propose_cart",
+                    input={"mandate_id": mandate_id, "product_id": "travel_001", "quantity": 1},
+                    output={"allowed": True, "cart_total": 189, "decision_code": "MANDATE_APPROVED"}
+                ))
+                tools_invoked.append(ToolCallRecord(
+                    tool="checkout",
+                    input={"cart_total": 189},
+                    output={"success": True, "order_id": order_id, "decision_code": "MANDATE_APPROVED"}
+                ))
+
+                AuditService.log_event(
+                    db=db,
+                    trace_id=trace_id,
+                    actor="mandate_engine",
+                    event_type="MANDATE_APPROVED",
+                    action="Mandate Decision: " + action_id,
+                    decision="approved",
+                    reason_code="MANDATE_APPROVED",
+                    input_data={"cart_total": 189, "mandate_id": mandate_id, "action_id": action_id},
+                    output_data={"cart_total": 189, "max_amount": 800, "action_id": action_id}
+                )
+
+                proposed_cart_detail = [CartItemDetail(
+                    product=transit_carryon,
+                    quantity=1,
+                    unit_price=189,
+                    subtotal=189
+                )]
+
+                return AgentChatResponse(
+                    message="I found three compliant options from approved merchants. The first balances durability and total cost.",
+                    conversation_id=conv_id,
+                    trace_id=trace_id,
+                    tools_invoked=tools_invoked,
+                    products_considered=travel_carousel,
+                    carousel_products=travel_carousel,
+                    proposed_cart=proposed_cart_detail,
+                    cart_total=189,
+                    mandate_decision={
+                        "allowed": True,
+                        "decision_code": "MANDATE_APPROVED",
+                        "message": "Payment authorized.",
+                        "details": {"cart_total": 189, "max_amount": 800}
+                    },
+                    order_id=order_id,
+                    component_type="approved_card",
+                    action_id=action_id,
+                    upsell_item=packing_cubes
+                )
+
+        # Standard / Athletic / Footwear & General Catalog Intent
         # Determine target intent
         is_premium_scenario = any(w in user_msg for w in ["premium", "1799", "expensive", "premium runner"])
         is_shoes_query = any(w in user_msg for w in ["shoe", "shoes", "runner", "running", "footwear", "1500", "sprint"])
@@ -177,7 +381,8 @@ class AgentService:
                 conversation_id=conv_id,
                 trace_id=trace_id,
                 tools_invoked=tools_invoked,
-                products_considered=products_considered
+                products_considered=products_considered,
+                carousel_products=products_considered
             )
 
         # Tool 2: propose_cart
@@ -207,6 +412,8 @@ class AgentService:
             "cart_total": propose_res.cart_total,
             "details": propose_res.details
         }
+
+        upsell_product_resp: Optional[ProductResponse] = None
 
         # Tool 3: checkout
         if propose_res.allowed:
@@ -243,6 +450,7 @@ class AgentService:
                 complementary_items = [p for p in complementary_items if p.id != selected_product.id and p.price <= remaining_budget]
                 if complementary_items:
                     top_upsell = complementary_items[0]
+                    upsell_product_resp = ProductResponse.model_validate(top_upsell)
                     combined_total = selected_product.price + top_upsell.price
                     upsell_note = (
                         f"\n\n💡 **Smart Revenue Growth Recommendation:** You have **₹{remaining_budget:,}** remaining in your authorized mandate budget. "
@@ -255,6 +463,8 @@ class AgentService:
                 f"and allowed category (`{selected_product.category}`). Order `{confirm_res.order_id}` has been created and sent to Razorpay Test Mode."
                 f"{upsell_note}"
             )
+            comp_type = "approved_card"
+            fail_details = None
         else:
             # Propose failed: Mandate Exceeded or other violation
             tools_invoked.append(ToolCallRecord(
@@ -286,8 +496,8 @@ class AgentService:
                     output={"alternative_id": alt_product.id, "name": alt_product.name, "price": alt_product.price}
                 ))
 
+            diff = propose_res.details.get("difference", selected_product.price - mandate.max_amount)
             if propose_res.decision_code == "MANDATE_EXCEEDED":
-                diff = propose_res.details.get("difference", selected_product.price - mandate.max_amount)
                 alt_text = f" However, I found the **{alt_product.name}** for **₹{alt_product.price:,}** which fits strictly within your ₹{mandate.max_amount:,} limit." if alt_product else ""
                 assistant_message = (
                     f"❌ **Transaction Blocked by Mandate Engine** (`MANDATE_EXCEEDED`)\n\n"
@@ -308,15 +518,32 @@ class AgentService:
             else:
                 assistant_message = f"❌ **Transaction Blocked:** {propose_res.message}"
 
+            comp_type = "rejected_card"
+            fail_details = {
+                "cart_total": selected_product.price,
+                "max_amount": mandate.max_amount,
+                "difference": diff,
+                "items_count": len(proposed_cart) or 1,
+                "reason": propose_res.message,
+                "code": propose_res.decision_code,
+                "alternative_price": alt_product.price if alt_product else None
+            }
+
         return AgentChatResponse(
             message=assistant_message,
             conversation_id=conv_id,
             trace_id=trace_id,
             tools_invoked=tools_invoked,
             products_considered=products_considered,
+            carousel_products=products_considered,
             proposed_cart=proposed_cart,
             cart_total=cart_total,
             mandate_decision=mandate_decision_dict,
             order_id=order_id,
-            alternative_product=alt_product_resp
+            alternative_product=alt_product_resp,
+            component_type=comp_type,
+            upsell_item=upsell_product_resp,
+            action_id=propose_res.action_id if propose_res else None,
+            failure_details=fail_details
         )
+
