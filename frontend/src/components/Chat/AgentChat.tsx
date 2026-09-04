@@ -13,7 +13,8 @@ interface AgentChatProps {
   currencySymbol?: string;
   onSendMessage: (text: string) => void;
   onSelectProduct?: (product: Product) => void;
-  onViewAudit?: () => void;
+  onViewAudit?: (decision: "approved" | "rejected", traceId?: string, reason?: string, code?: string) => void;
+  onOpenRazorpay?: (order: { orderId?: string | null; amount: number; traceId?: string }) => void;
 }
 
 export const AgentChat: React.FC<AgentChatProps> = ({
@@ -23,6 +24,7 @@ export const AgentChat: React.FC<AgentChatProps> = ({
   onSendMessage,
   onSelectProduct,
   onViewAudit,
+  onOpenRazorpay,
 }) => {
   const [inputText, setInputText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -85,9 +87,11 @@ export const AgentChat: React.FC<AgentChatProps> = ({
               </div>
 
               {/* Agent Text */}
-              <div className="text-xs text-slate-700 leading-relaxed font-normal pl-7 whitespace-pre-line">
-                {msg.text}
-              </div>
+              {msg.text && (
+                <div className="text-xs text-slate-700 leading-relaxed font-normal pl-7 whitespace-pre-line">
+                  {msg.text}
+                </div>
+              )}
 
               {/* Custom Component: Horizontal Product Carousel */}
               {msg.carousel_products && msg.carousel_products.length > 0 && (
@@ -108,8 +112,15 @@ export const AgentChat: React.FC<AgentChatProps> = ({
                     currencySymbol={currencySymbol}
                     orderId={msg.order_id}
                     upsellItem={msg.upsell_item}
-                    onViewAudit={onViewAudit}
+                    onViewAudit={() => onViewAudit?.("approved", msg.trace_id)}
                     onAddUpsell={(item) => onSendMessage(`Add ${item.name} to my cart and confirm checkout`)}
+                    onPayWithRazorpay={() =>
+                      onOpenRazorpay?.({
+                        orderId: msg.order_id,
+                        amount: msg.cart_total ?? 189,
+                        traceId: msg.trace_id,
+                      })
+                    }
                   />
                 </div>
               )}
@@ -125,7 +136,14 @@ export const AgentChat: React.FC<AgentChatProps> = ({
                       const altName = alt?.name || "the compliant alternative";
                       onSendMessage(`Let's purchase ${altName} within my mandate budget.`);
                     }}
-                    onViewAudit={onViewAudit}
+                    onViewAudit={() =>
+                      onViewAudit?.(
+                        "rejected",
+                        msg.trace_id,
+                        msg.failure_details?.reason,
+                        msg.failure_details?.code
+                      )
+                    }
                   />
                 </div>
               )}
@@ -144,7 +162,7 @@ export const AgentChat: React.FC<AgentChatProps> = ({
       </div>
 
       {/* Quick Prompt Chips */}
-      <div className="px-6 py-2 bg-slate-50/70 border-t border-slate-100 flex items-center gap-2 overflow-x-auto text-[11px]">
+      <div className="px-6 py-2 bg-slate-50/70 border-t border-slate-100 flex items-center gap-2 overflow-x-auto text-[11px] scrollbar-thin">
         <span className="text-slate-400 font-medium whitespace-nowrap">Try scenario:</span>
         <button
           onClick={() =>
@@ -152,9 +170,9 @@ export const AgentChat: React.FC<AgentChatProps> = ({
               "Find a reliable travel setup under my approved budget. Prioritize carry-on size."
             )
           }
-          className="whitespace-nowrap px-2.5 py-1 rounded-full bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-colors font-medium shadow-2xs"
+          className="whitespace-nowrap px-2.5 py-1 rounded-full bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-colors font-medium shadow-2xs cursor-pointer"
         >
-          ✈️ Carry-on setup ($189)
+          ✈️ Carry-on setup ($189) [Approved]
         </button>
         <button
           onClick={() =>
@@ -162,25 +180,25 @@ export const AgentChat: React.FC<AgentChatProps> = ({
               "Buy the luxury luggage $1099"
             )
           }
-          className="whitespace-nowrap px-2.5 py-1 rounded-full bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 transition-colors font-medium shadow-2xs"
+          className="whitespace-nowrap px-2.5 py-1 rounded-full bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 transition-colors font-medium shadow-2xs cursor-pointer"
         >
-          🚫 Luxury trunk $1099 (Test Block)
+          🚫 Luxury trunk $1099 [Blocked]
         </button>
         <button
           onClick={() =>
             handleQuickPrompt("Find me running shoes under ₹1500")
           }
-          className="whitespace-nowrap px-2.5 py-1 rounded-full bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-colors font-medium shadow-2xs"
+          className="whitespace-nowrap px-2.5 py-1 rounded-full bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-colors font-medium shadow-2xs cursor-pointer"
         >
-          👟 Running shoes under ₹1500
+          👟 Running shoes under ₹1500 [Approved]
         </button>
         <button
           onClick={() =>
             handleQuickPrompt("Buy the premium running shoes")
           }
-          className="whitespace-nowrap px-2.5 py-1 rounded-full bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 transition-colors font-medium shadow-2xs"
+          className="whitespace-nowrap px-2.5 py-1 rounded-full bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 transition-colors font-medium shadow-2xs cursor-pointer"
         >
-          ❌ Premium runner (Test Block)
+          ❌ Premium runner ₹1799 [Blocked]
         </button>
       </div>
 

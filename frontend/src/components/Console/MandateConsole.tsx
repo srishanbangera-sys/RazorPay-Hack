@@ -7,11 +7,13 @@ import { Check, ShieldCheck, Store, Package, CreditCard, Lock, ArrowUpRight } fr
 interface MandateConsoleProps {
   mandate: MandateState;
   onOpenAudit: () => void;
+  onSelectCategory?: (category: string) => void;
 }
 
 export const MandateConsole: React.FC<MandateConsoleProps> = ({
   mandate,
   onOpenAudit,
+  onSelectCategory,
 }) => {
   // Live ticking countdown timer
   const [secondsRemaining, setSecondsRemaining] = useState(
@@ -137,16 +139,19 @@ export const MandateConsole: React.FC<MandateConsoleProps> = ({
         {/* Allowed Categories Tags */}
         <div className="mt-4 pt-3 border-t border-slate-100">
           <span className="text-[11px] font-medium text-slate-400 block mb-2">
-            Allowed categories
+            Allowed categories (Click to explore)
           </span>
           <div className="flex flex-wrap gap-1.5">
-            {mandate.allowed_categories.slice(0, 4).map((cat) => (
-              <span
+            {mandate.allowed_categories.slice(0, 6).map((cat) => (
+              <button
                 key={cat}
-                className="px-2.5 py-1 rounded-md bg-blue-50/70 border border-blue-100 text-blue-700 text-[11px] font-medium"
+                type="button"
+                onClick={() => onSelectCategory?.(cat)}
+                className="px-2.5 py-1 rounded-md bg-blue-50/70 hover:bg-blue-100 border border-blue-100 text-blue-700 text-[11px] font-medium transition-colors cursor-pointer"
+                title={`Ask agent for products in ${cat}`}
               >
                 {cat}
-              </span>
+              </button>
             ))}
           </div>
         </div>
